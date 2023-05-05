@@ -24,6 +24,7 @@ import random
 import re
 import time
 import logging
+from builtins import str
 
 # Create the logger
 logger = logging.getLogger('femtosip')
@@ -476,61 +477,61 @@ class SIP:
                 state['done'] = True
 
         writebuf = bytearray()
-        with self.make_socket() as sock:
-            while not state['done']:
-                now = time.time()
-                try:
-                    if state['status'] == 'send_invite':
-                        logger.info('request: INVITE sip:'
-                            + remote_id + '@' + self.gateway)
-                        branch = self.make_branch()
-                        writebuf += self.make_invite_sip_packet(
-                                remote_id, self.gateway,
-                                branch, tag, call_id, self.seq,
-                                state['realm'], state['nonce'])
-                        state['status'] = 'done_send_invite'
-                    elif state['status'] == 'send_cancel':
-                        logger.info('request: CANCEL sip:'
-                            + remote_id + '@' + self.gateway)
-                        writebuf += self.make_cancel_sip_packet(
-                                remote_id, self.gateway,
-                                branch, tag, call_id, self.seq)
-                        state['status'] = 'done_send_cancel'
-                    elif state['status'] == 'send_bye':
-                        logger.info('request: BYE sip:'
-                            + remote_id + '@' + self.gateway)
-                        branch = self.make_branch()
-                        writebuf += self.make_bye_sip_packet(
-                                remote_id, self.gateway,
-                                branch, tag, state['remote_tag'],
-                                call_id, self.seq)
-                        state['status'] = 'done_send_bye'
-                    elif state['status'] == 'delay':
-                        if now - state['delay_start'] > delay:
-                            state['status'] = 'send_cancel'
-                    elif now - state['last_request'] > 1.0:
-                        error('Timeout while waiting for server response')
-
-                    # Check whether we can read or write from the socket
-                    can_read, can_write, in_error = \
-                        select.select([sock], [sock], [sock], 10e-3)
-                    if len(in_error) > 0:
-                        error('Socket error')
-                    else:
-                        if len(can_read) > 0:
-                            readbuf = sock.recv(4096)
-                            ResponseParser().feed(readbuf, handle_response)
-                        if len(can_write) > 0 and len(writebuf) > 0:
-                            state['last_request'] = time.time()
-                            sent = sock.send(writebuf)
-                            if sent == 0:
-                                error('Error while writing to socket')
-                            writebuf = writebuf[sent:]
-                except KeyboardInterrupt:
-                    if state['status'] == 'delay':
+        sock =  self.make_socket()
+        while not state['done']:
+            now = time.time()
+            try:
+                if state['status'] == 'send_invite':
+                    logger.info('request: INVITE sip:'
+                        + remote_id + '@' + self.gateway)
+                    branch = self.make_branch()
+                    writebuf += self.make_invite_sip_packet(
+                            remote_id, self.gateway,
+                            branch, tag, call_id, self.seq,
+                            state['realm'], state['nonce'])
+                    state['status'] = 'done_send_invite'
+                elif state['status'] == 'send_cancel':
+                    logger.info('request: CANCEL sip:'
+                        + remote_id + '@' + self.gateway)
+                    writebuf += self.make_cancel_sip_packet(
+                            remote_id, self.gateway,
+                            branch, tag, call_id, self.seq)
+                    state['status'] = 'done_send_cancel'
+                elif state['status'] == 'send_bye':
+                    logger.info('request: BYE sip:'
+                        + remote_id + '@' + self.gateway)
+                    branch = self.make_branch()
+                    writebuf += self.make_bye_sip_packet(
+                            remote_id, self.gateway,
+                            branch, tag, state['remote_tag'],
+                            call_id, self.seq)
+                    state['status'] = 'done_send_bye'
+                elif state['status'] == 'delay':
+                    if now - state['delay_start'] > delay:
                         state['status'] = 'send_cancel'
-                    else:
-                        state['done'] = True
+                elif now - state['last_request'] > 1.0:
+                    error('Timeout while waiting for server response')
+
+                # Check whether we can read or write from the socket
+                can_read, can_write, in_error = \
+                    select.select([sock], [sock], [sock], 10e-3)
+                if len(in_error) > 0:
+                    error('Socket error')
+                else:
+                    if len(can_read) > 0:
+                        readbuf = sock.recv(4096)
+                        ResponseParser().feed(readbuf, handle_response)
+                    if len(can_write) > 0 and len(writebuf) > 0:
+                        state['last_request'] = time.time()
+                        sent = sock.send(writebuf)
+                        if sent == 0:
+                            error('Error while writing to socket')
+                        writebuf = writebuf[sent:]
+            except KeyboardInterrupt:
+                if state['status'] == 'delay':
+                    state['status'] = 'send_cancel'
+                else:
+                    state['done'] = True
 
 
 #
