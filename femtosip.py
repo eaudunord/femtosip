@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 #   FemtoSIP -- A minimal SIP client
-#   Copyright (C) 2017-2018  Andreas Stöckel
+#   Copyright (C) 2017-2018  Andreas Stockel
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU Affero General Public License as published by
@@ -24,7 +24,6 @@ import random
 import re
 import time
 import logging
-from builtins import str
 
 # Create the logger
 logger = logging.getLogger('femtosip')
@@ -35,7 +34,7 @@ def format_sip_header_field(key):
     'Content-Length', cseq becomes 'CSeq' and call-id becomes 'Call-ID'.
     """
     if isinstance(key, bytes) or isinstance(key, bytearray):
-        key = str(key, 'ascii')
+        key = str(key)
     key = key.lower()
 
     # Special cases
@@ -114,15 +113,15 @@ class ResponseParser:
         def call_callback():
             # Convert the message code to an integer
             try:
-                self.code = int(str(self.code, 'ascii'))
+                self.code = int(str(self.code))
             except:
                 logger.error('Received invalid response code')
                 self.code = -1
 
             # Convert the protocol and the message to a string
             try:
-                self.protocol = str(self.protocol, 'ascii')
-                self.message = str(self.message, 'ascii')
+                self.protocol = str(self.protocol)
+                self.message = str(self.message)
             except:
                 logger.error('Invalid protocol or message')
 
@@ -439,7 +438,7 @@ class SIP:
                 if not 'WWW-Authenticate' in res.fields:
                     error('Did not find "WWW-Authenticate" field')
                     return
-                auth = str(res.fields['WWW-Authenticate'], 'ascii')
+                auth = str(res.fields['WWW-Authenticate'])
                 match = re.match(
                     r'^[Dd]igest\s+realm="([^"]*)"\s*,\s*nonce="([^"]*)".*$',
                     auth)
@@ -466,7 +465,7 @@ class SIP:
             elif res.code == 200:
                 if state['status'] == 'delay':
                     self.seq += 1
-                    state['remote_tag'] = str(res.fields['To'].split(b';', 2)[-1].split(b'=', 2)[-1], 'ascii')
+                    state['remote_tag'] = str(res.fields['To'].split(b';', 2)[-1].split(b'=', 2)[-1])
                     state['status'] = 'send_bye'
                 if state['status'] == 'done_send_bye':
                     state['done'] = True
